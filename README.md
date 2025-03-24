@@ -1,16 +1,16 @@
 # Animations
 
-A collection of creative animations by Virgil Bellini.
+A collection of unique animations  for projects and websites.
 
 ## Project Structure
 
 Each animation lives in its own directory. Starting with:
 
-- `/animation1` - First animation
-- `/animation2` - Second animation
-- `/animation3` - Third animation
+- `/animation1` - Token Visualization Animation
+- `/animation2` - Second animation (TBD)
+- `/animation3` - Third animation (TBD)
 
-More animations will be added as they are developed.
+Additional animations will be added as they are developed.
 
 ## Setup and Usage
 
