@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Block Producer Blockchain Visualization</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <style>
+        #ed-632574227 { 
+            padding: 0px; 
+            margin: 0px; 
+            position: relative; 
+            left: 50%; 
+            right: 50%; 
+        } 
+        
+        body { 
+            margin: 0px; 
+            padding: 0px; 
+            display: flex; 
+            justify-content: center; 
+            align-items: flex-start; 
+            min-height: 50vh; 
+            background-color: rgb(15, 16, 15); 
+            overflow: visible; 
+        } 
+        
+        #animation-container { 
+            width: 45%; 
+            height: auto; 
+            display: flex; 
+            justify-content: center; 
+            background-color: rgb(15, 16, 15); 
+            margin-top: 0px; 
+            padding-top: 0px; 
+            position: relative; 
+            top: 0px; 
+            overflow: visible; 
+        } 
+        
+        #animation-container canvas { 
+            display: block; 
+            margin-top: 0px; 
+            padding-top: 0px; 
+        } 
+        
+        @media screen and (max-width: 200px) {
+            #ed-632574227 { 
+                position: static; 
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="animation-container"></div>
+    <script>
+        const blockProducerNames = [
+            "cerebro", "ubqtbptn", "alvosec", "saltant", "rockeronebp",
+            "protonuk", "protonnz", "protonmadrid", "protonind", "lnxcafeblock"
+        ];
+
+        let blockProducerCircles = [];
+        let transactionIcons = [];
+        let screenCenterX, screenCenterY;
+        let scheduleCircleRadius = 248;
+        let scheduleTextCircleRadius = 39;
+        let blockRotationRadius = 84;
+        let currentTransactionCount = 0;
+        const TRANSACTION_RATE = 14;
+        const MAX_TRANSACTION_COUNT = 1000000;
+        let blockApprovalIndex = 0;
+        let approvalTimer = 0;
+        const approvalInterval = 30;
+        let canvas;
+
+        function setup() {
+            const container = document.getElementById('animation-container');
+            canvas = createCanvas(900, 675);
+            canvas.parent(container);
+            frameRate(60);
+            screenCenterX = width / 2;
+            screenCenterY = height / 2;
+
+            // Ensure the canvas has no margin or padding *directly*
+            canvas.style('margin', '0px');
+            canvas.style('padding', '0px');
+
+            for (let i = 0; i < blockProducerNames.length; i++) {
+                let angle = map(i, 0, blockProducerNames.length, 0, TWO_PI) - HALF_PI;
+                let x = screenCenterX + cos(angle) * scheduleCircleRadius;
+                let y = screenCenterY + sin(angle) * scheduleCircleRadius;
+
+                blockProducerCircles.push({
+                    x: x,
+                    y: y,
+                    name: blockProducerNames[i],
+                    blockRotationAngle: angle,
+                    transactionCount: 0
+                });
+            }
+        }
+
+        function draw() {
+            background(15, 16, 15);
+
+            // Draw blockchain center
+            fill(75, 40, 130, 200);
+            noStroke();
+            rectMode(CENTER);
+            rect(screenCenterX, screenCenterY - 75, 169, 84, 20);
+
+            fill(255);
+            textAlign(CENTER, CENTER);
+            textSize(20);
+            textStyle(BOLD);
+            text("XPR Network", screenCenterX, screenCenterY - 90);
+
+            textSize(16);
+            textStyle(NORMAL);
+            text(`Blocks: ${floor(currentTransactionCount)}`, screenCenterX, screenCenterY - 45);
+
+            // Draw producers
+            for (let i = 0; i < blockProducerCircles.length; i++) {
+                const bp = blockProducerCircles[i];
+
+                // Producer circle
+                const fillColor = (i === blockApprovalIndex) ?
+                    color(255, 200, 0, 200) : color(100, 100, 255, 150);
+
+                fill(fillColor);
+                noStroke();
+                ellipse(bp.x, bp.y, scheduleTextCircleRadius, scheduleTextCircleRadius);
+
+                // Producer name
+                fill(255);
+                textSize(11);
+                textAlign(CENTER, CENTER);
+                text(bp.name, bp.x, bp.y);
+
+                // Rotating block
+                bp.blockRotationAngle += 0.02;
+                const blockX = bp.x + cos(bp.blockRotationAngle) * blockRotationRadius;
+                const blockY = bp.y + sin(bp.blockRotationAngle) * blockRotationRadius;
+
+                const blockColor = bp.transactionCount > 0 ?
+                    color(255, 255, 0, 180) : color(100, 100, 100, 100);
+
+                fill(blockColor);
+                rect(blockX - 16, blockY - 13, 33, 28);
+
+                fill(255);
+                textSize(11);
+                textAlign(CENTER, CENTER);
+                textStyle(BOLD);
+                stroke(0);
+                strokeWeight(3);
+                text(`Tx: ${floor(bp.transactionCount)}`, blockX, blockY);
+                noStroke();
+            }
+
+            // Animate transactions
+            for (let i = transactionIcons.length - 1; i >= 0; i--) {
+                let tx = transactionIcons[i];
+                fill(255, 165, 0, 200);
+                noStroke();
+                square(tx.x, tx.y, 11);
+
+                if (tx.moving) {
+                    let target = blockProducerCircles[tx.targetProducer];
+                    tx.x += (target.x - tx.x) * 0.05;
+                    tx.y += (target.y - tx.y) * 0.05;
+
+                    if (dist(tx.x, tx.y, target.x, target.y) < 5) {
+                        tx.moving = false;
+                        transactionIcons.splice(i, 1);
+                        target.transactionCount++;
+                    }
+                }
+            }
+
+            // Generate new transactions
+            if (frameCount % 2 === 0 && transactionIcons.length < 50) {
+                for (let i = 0; i < 3; i++) {
+                    transactionIcons.push({
+                        x: random(width),
+                        y: 50,
+                        targetProducer: floor(random(blockProducerNames.length)),
+                        moving: true
+                    });
+                }
+            }
+
+            // Update transaction count
+            currentTransactionCount += TRANSACTION_RATE / frameRate();
+            if (currentTransactionCount >= MAX_TRANSACTION_COUNT) {
+                currentTransactionCount = 0;
+                blockProducerCircles.forEach(producer => {
+                    producer.transactionCount = 0;
+                });
+            }
+
+            // Handle block approval
+            approvalTimer++;
+            if (approvalTimer >= approvalInterval) {
+                blockApprovalIndex = (blockApprovalIndex + 1) % blockProducerNames.length;
+                approvalTimer = 0;
+            }
+        }
+
+        function windowResized() {
+            const container = document.getElementById('animation-container');
+            resizeCanvas(900, 675);
+            screenCenterX = width / 2;
+            screenCenterY = height / 2;
+        }
+    </script>
+</body>
+</html>
