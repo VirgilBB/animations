@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>f2o Sports Token Economy</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #262626;
+        }
+    </style>
+</head>
+<body>
+    <script>
+        let angle = 0;
+        let orbitRadius = 150;
+        let centerX, centerY;
+        let components = [];
+
+        function setup() {
+            createCanvas(800, 800);
+            centerX = width / 2;
+            centerY = height / 2;
+
+            // Initialize components
+            components = [
+                { name: "Merch Sales", color: "#EC008C", percentage: "5-15%", angle: 0 },
+                { name: "Sponsorship", color: "#AA0072", percentage: "10-20%", angle: TWO_PI/3 },
+                { name: "NFT Resales", color: "#90CEA6", percentage: "5%", angle: 2*TWO_PI/3 }
+            ];
+        }
+
+        function draw() {
+            background('#262626');
+
+            // Draw central circle
+            fill('#39C5F3');
+            stroke('#39C5F3');
+            strokeWeight(2);
+            circle(centerX, centerY, 100);
+
+            // Draw center text
+            fill(255);
+            noStroke();
+            textAlign(CENTER, CENTER);
+            textSize(16);
+            text("f2o\nToken", centerX, centerY);
+
+            // Update and draw orbiting components
+            angle += 0.005;
+            drawComponents();
+            drawConnections();
+            drawF2OConnections();
+        }
+
+        function drawComponents() {
+            components.forEach((comp, i) => {
+                let x = centerX + orbitRadius * cos(angle + comp.angle);
+                let y = centerY + orbitRadius * sin(angle + comp.angle);
+                
+                // Draw component circle
+                fill(color(comp.color));
+                stroke('#39C5F3');
+                strokeWeight(1);
+                circle(x, y, 80);
+                
+                // Draw component text
+                fill(255);
+                noStroke();
+                textSize(12);
+                textAlign(CENTER, CENTER);
+                text(comp.name + "\n" + comp.percentage, x, y);
+                
+                // Store position for connections
+                comp.x = x;
+                comp.y = y;
+            });
+        }
+
+        function drawConnections() {
+            stroke('#39C5F3');
+            strokeWeight(1);
+            
+            components.forEach(comp => {
+                // Calculate angle between component and center
+                let baseAngle = atan2(comp.y - centerY, comp.x - centerX);
+                
+                // Draw three curves with offsets
+                for (let i = -1; i <= 1; i++) {
+                    let offsetAngle = i * 0.1; // Adjust this value to change curve spread
+                    
+                    // Calculate offset points
+                    let startX = comp.x + 10 * cos(baseAngle + PI/2 + offsetAngle);
+                    let startY = comp.y + 10 * sin(baseAngle + PI/2 + offsetAngle);
+                    let endX = centerX + 10 * cos(baseAngle + PI/2 + offsetAngle);
+                    let endY = centerY + 10 * sin(baseAngle + PI/2 + offsetAngle);
+                    
+                    // Calculate control points for bezier curve
+                    let midX = (startX + endX) / 2;
+                    let midY = (startY + endY) / 2;
+                    let controlX1 = midX + 30 * cos(baseAngle + PI/2);
+                    let controlY1 = midY + 30 * sin(baseAngle + PI/2);
+                    let controlX2 = midX + 30 * cos(baseAngle + PI/2);
+                    let controlY2 = midY + 30 * sin(baseAngle + PI/2);
+                    
+                    // Draw bezier curve
+                    noFill();
+                    bezier(startX, startY, controlX1, controlY1, controlX2, controlY2, endX, endY);
+                    
+                    // Draw animated dots
+                    let t = (sin(angle * 2) + 1) / 2;
+                    let dotX = bezierPoint(startX, controlX1, controlX2, endX, t);
+                    let dotY = bezierPoint(startY, controlY1, controlY2, endY, t);
+                    fill('#90CEA6');
+                    noStroke();
+                    circle(dotX, dotY, 5);
+                }
+            });
+        }
+
+        function mousePressed() {
+            // Add interaction on click
+            components.forEach(comp => {
+                let d = dist(mouseX, mouseY, comp.x, comp.y);
+                if (d < 40) {
+                    comp.color = color(random(['#EC008C', '#AA0072', '#90CEA6']));
+                }
+            });
+        }
+
+        function drawF2OConnections() {
+            stroke('#39C5F3');
+            strokeWeight(1);
+            noFill();
+            
+            // Find NFT Resales and Sponsorship components
+            components.forEach(comp => {
+                if (comp.name === "NFT Resales" || comp.name === "Sponsorship") {
+                    // Calculate control points for bezier curve
+                    let midX = (centerX + comp.x) / 2;
+                    let midY = (centerY + comp.y) / 2;
+                    let controlX1 = midX + 50 * cos(angle);
+                    let controlY1 = midY + 50 * sin(angle);
+                    let controlX2 = midX - 50 * cos(angle);
+                    let controlY2 = midY - 50 * sin(angle);
+                    
+                    // Draw bezier curve
+                    bezier(centerX, centerY, controlX1, controlY1, controlX2, controlY2, comp.x, comp.y);
+                }
+            });
+        }
+    </script>
+</body>
+</html>
